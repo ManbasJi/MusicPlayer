@@ -1,8 +1,11 @@
 package com.manbas.downmusic.service;
 
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -24,6 +27,10 @@ public class TestService extends Service implements MediaPlayer.OnPreparedListen
     public static int PLAYING=1;
     public static int PAUSING=2;
     public int state=0;
+    private Context mContext;
+    private Notification notification;
+    private Notification.Builder builder;
+    private NotificationManager mNotificationManager;
 
     MyBindler myBindler=new MyBindler();
 
@@ -40,22 +47,46 @@ public class TestService extends Service implements MediaPlayer.OnPreparedListen
 
         mediaPlayer.prepareAsync();
 
-        String songName;
-        PendingIntent pi=PendingIntent.getActivity(this,0,
-                new Intent(this, TestMediaPlayer.class),
-                PendingIntent.FLAG_UPDATE_CURRENT);
-        Notification.Builder builder=new Notification.Builder(this);
-        builder.setContentTitle("Bmob Test");
-        builder.setContentText("mediaplay");
-        builder.setSmallIcon(R.mipmap.ic_launcher);
-        builder.setContentIntent(pi);
-        Notification notification=builder.build();
-        notification.tickerText="mediaplay";
-        notification.icon= R.mipmap.play;
-        notification.flags|=Notification.FLAG_ONGOING_EVENT;
-        startForeground(0, notification);
     }
 
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        mContext = this.getApplicationContext();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Intent it = new Intent(Intent.ACTION_MAIN);
+        it.addCategory(Intent.CATEGORY_LAUNCHER);
+        it.setComponent(new ComponentName(this, TestMediaPlayer.class));
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);//设置启动模式
+
+        PendingIntent pi = PendingIntent.getActivity(mContext, 0,
+                it, PendingIntent.FLAG_UPDATE_CURRENT);
+        builder = new Notification.Builder(mContext);
+        builder.setSmallIcon(R.mipmap.play);
+        builder.setContentTitle("manbasji's mediaplayer");
+        builder.setTicker("MEIDAPLAYER");
+        builder.setContentText("");
+        builder.setContentIntent(pi);
+        mNotificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        notification = builder.build();
+        notification.flags |= Notification.FLAG_AUTO_CANCEL;
+
+        startForeground(1, notification);
+
+        return START_STICKY;
+
+    }
+
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+//        mNotificationManager.cancel(1);
+    }
 
     public void playOrPause(){
         if(mediaPlayer.isPlaying()){
