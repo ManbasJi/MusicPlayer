@@ -1,12 +1,21 @@
 package com.manbas.downmusic.service;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+
+import com.manbas.downmusic.R;
+import com.manbas.downmusic.activity.PlayingActivity;
+import com.manbas.downmusic.activity.SongListActivity;
 
 import java.io.IOException;
 
@@ -45,9 +54,9 @@ public class MediaPlayService extends Service implements MediaPlayer.OnPreparedL
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Intent it = new Intent(Intent.ACTION_MAIN);
-        it.addCategory(Intent.CATEGORY_LAUNCHER);
-        it.setComponent(new ComponentName(this, TestMediaPlayer.class));
+        Intent it = new Intent();
+//        it.addCategory(Intent.CATEGORY_LAUNCHER);
+        it.setComponent(new ComponentName(this, PlayingActivity.class));
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);//设置启动模式
 
@@ -66,6 +75,7 @@ public class MediaPlayService extends Service implements MediaPlayer.OnPreparedL
         startForeground(1, notification);
 
         return START_STICKY;
+    }
 
     public void playUrl(String url){
         mediaPlayer.reset();
@@ -110,6 +120,7 @@ public class MediaPlayService extends Service implements MediaPlayer.OnPreparedL
 
     @Override
     public void onPrepared(MediaPlayer mp) {
+        mp.start();
     }
 
     public class MyBindler extends Binder{

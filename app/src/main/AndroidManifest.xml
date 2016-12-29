@@ -13,12 +13,13 @@
         <service android:name=".service.MediaPlayService"></service>
 
         <activity android:name=".activity.SongListActivity">
-        </activity>
-        <activity android:name=".activity.PlayingActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"></action>
                 <category android:name="android.intent.category.LAUNCHER"></category>
             </intent-filter>
+        </activity>
+        <activity android:name=".activity.PlayingActivity">
+
         </activity>
 
         <meta-data android:name="design_width" android:value="768">

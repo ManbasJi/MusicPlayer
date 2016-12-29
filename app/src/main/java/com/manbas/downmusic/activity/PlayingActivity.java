@@ -20,9 +20,11 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.manbas.downmusic.R;
 import com.manbas.downmusic.base.LogUtis;
 import com.manbas.downmusic.service.MediaPlayService;
+import com.manbas.downmusic.view.CircleTransform;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -62,6 +64,7 @@ public class PlayingActivity extends Activity implements MediaPlayer.OnBuffering
     String musicUrl="";
     String songName="";
     String artistName="";
+    String songImage = "";
 
     Handler handler = new Handler();
     Runnable runnable = new Runnable() {
@@ -113,6 +116,7 @@ public class PlayingActivity extends Activity implements MediaPlayer.OnBuffering
         musicUrl=getIntent().getStringExtra("musicUrl");
         songName=getIntent().getStringExtra("songName");
         artistName=getIntent().getStringExtra("artistName");
+        songImage = getIntent().getStringExtra("songImage");
         initView();
         initPlay();
     }
@@ -132,17 +136,16 @@ public class PlayingActivity extends Activity implements MediaPlayer.OnBuffering
                 onListener();
                 handler.post(runnable);
                 objectAnimator.start();
-                objectAnimator.start();
+                objectAnimator1.start();
                 LogUtis.Log("ivPlay.performClick()");
             }
-        },1500);
+        }, 1000);
     }
 
     private void initView(){
-        if(songName!=null && songName!=""){
             tvSongname.setText(songName);
             tvArtistName.setText(artistName);
-        }
+        Glide.with(this).load(songImage).transform(new CircleTransform(this)).into(ivSongImage);
     }
 
     private void onBindService(){
@@ -195,7 +198,7 @@ public class PlayingActivity extends Activity implements MediaPlayer.OnBuffering
                         if(mediaPlayService.mediaPlayer.isPlaying()){
                             ivPlay.setImageResource(R.mipmap.pause);
                             objectAnimator.start();
-                            objectAnimator.start();
+                            objectAnimator1.start();
                         }else{
                             ivPlay.setImageResource(R.mipmap.play);
                             objectAnimator.pause();

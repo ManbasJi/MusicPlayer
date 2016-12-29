@@ -13,6 +13,7 @@ import com.manbas.downmusic.MvpView.SongListView;
 import com.manbas.downmusic.R;
 import com.manbas.downmusic.adapter.SongListAdapter;
 import com.manbas.downmusic.api.GetSongListApi;
+import com.manbas.downmusic.base.BaseUtils;
 import com.manbas.downmusic.base.LogUtis;
 import com.manbas.downmusic.bean.SongMsgBean;
 import com.manbas.downmusic.presenter.SongListPresenter;
@@ -78,7 +79,13 @@ public class SongListActivity extends Activity implements SongListView{
         adapter.setOnSongItemClickListener(new SongListAdapter.OnSongItemClickListener() {
             @Override
             public void onItemClick(View v, int position) {
-//                BaseUtils.ToAc(SongListActivity.this,);
+                SongMsgBean bean = mlist.get(position);
+                Bundle b = new Bundle();
+                b.putString("songName", bean.getTitle());
+                b.putString("artistName", bean.getArtist_name());
+                b.putString("songImage", bean.getPic_big());
+//                b.putString("musicUrl",bean.get);
+                BaseUtils.ToAcb(SongListActivity.this, PlayingActivity.class, b);
             }
         });
     }
