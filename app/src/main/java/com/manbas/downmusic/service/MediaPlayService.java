@@ -80,7 +80,6 @@ public class MediaPlayService extends Service implements MediaPlayer.OnPreparedL
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-        mp.start();
     }
 
     public class MyBindler extends Binder{
