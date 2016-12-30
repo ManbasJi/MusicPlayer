@@ -11,6 +11,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.support.v7.widget.AppCompatSeekBar;
 import android.view.View;
 import android.view.Window;
@@ -21,10 +22,19 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.manbas.downmusic.MvpView.PlayingView;
 import com.manbas.downmusic.R;
 import com.manbas.downmusic.base.LogUtis;
+import com.manbas.downmusic.bean.SingleSongInfoBean;
+import com.manbas.downmusic.bean.SongMsgBean;
+import com.manbas.downmusic.presenter.PlayingPresenter;
 import com.manbas.downmusic.service.MediaPlayService;
+import com.manbas.downmusic.utlis.ToastUtils;
 import com.manbas.downmusic.view.CircleTransform;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -34,7 +44,7 @@ import butterknife.OnClick;
  * Created by Administrator on 2016/12/29.
  */
 
-public class PlayingActivity extends Activity implements MediaPlayer.OnBufferingUpdateListener{
+public class PlayingActivity extends Activity implements PlayingView,MediaPlayer.OnBufferingUpdateListener{
 
 
     @BindView(R.id.iv_back)
@@ -57,14 +67,25 @@ public class PlayingActivity extends Activity implements MediaPlayer.OnBuffering
     ImageView ivPlay;
     @BindView(R.id.iv_next)
     ImageView ivNext;
+    @BindView(R.id.tv_currentTime)
+            TextView tv_currentTime;
+    @BindView(R.id.tv_durationTime)
+            TextView tv_durationTime;
 
+    SingleSongInfoBean singleSongInfoBean;
+    PlayingPresenter playingPresenter;
     MediaPlayService mediaPlayService;
     ObjectAnimator objectAnimator,objectAnimator1;
+    SimpleDateFormat format=new SimpleDateFormat("mm:ss");
 
     String musicUrl="";
     String songName="";
     String artistName="";
-    String songImage = "";
+    String songId="";
+    String songPic="";
+
+    int index;
+    List<SongMsgBean> songlist;
 
     Handler handler = new Handler();
     Runnable runnable = new Runnable() {
@@ -76,8 +97,10 @@ public class PlayingActivity extends Activity implements MediaPlayer.OnBuffering
                 // 计算进度（获取进度条最大刻度*当前音乐播放位置 / 当前音乐时长）
                 long pos = seekbar.getMax() * position / duration;
                 seekbar.setProgress((int) pos);
+                String currentTime=format.format(position);
+                tv_currentTime.setText(currentTime);
             }
-            handler.postDelayed(runnable, 200);
+            handler.postDelayed(runnable, 1000);
         }
     };
 
@@ -113,46 +136,69 @@ public class PlayingActivity extends Activity implements MediaPlayer.OnBuffering
 
         ButterKnife.bind(this);
         onBindService();
-        musicUrl=getIntent().getStringExtra("musicUrl");
-        songName=getIntent().getStringExtra("songName");
-        artistName=getIntent().getStringExtra("artistName");
-        songImage = getIntent().getStringExtra("songImage");
-        initView();
-        initPlay();
+        playingPresenter=new PlayingPresenter(this,this);
+        songlist= (List<SongMsgBean>) getIntent().getSerializableExtra("songList");
+        LogUtis.Log("songListSize"+songlist.size());
+        index=Integer.parseInt(getIntent().getStringExtra("index"));
+        if(songlist!=null){
+            LogUtis.Log("songId:"+songId);
+            playingPresenter.getSingleSongMsg(songlist.get(index).getSong_id());
+        }else{
+            ToastUtils.showShortToast(this,"获取歌曲失败!");
+        }
+        singleSongInfoBean=new SingleSongInfoBean();
+
+
+//        initView();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+
+
     }
 
-    private void initPlay(){
+    private void initPlay(final String url){
           /*
         * 延迟1.5秒后进行播放音乐（等待Service完成）*/
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                mediaPlayService.playUrl("http://yinyueshiting.baidu.com/data2/music/42783748/42783748.mp3?xcode=3f58d8f080eebe32cc3224dc97e4d7a9");
-                onListener();
-                handler.post(runnable);
-                objectAnimator.start();
-                objectAnimator1.start();
-                LogUtis.Log("ivPlay.performClick()");
-            }
-        }, 1000);
+
+        if(mediaPlayService==null){
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    mediaPlayService.playUrl(url);
+                    onListener();
+                    handler.post(runnable);
+                    objectAnimator.start();
+                    objectAnimator1.start();
+
+                    LogUtis.Log("durationTime:"+format.format(mediaPlayService.mediaPlayer.getDuration()));
+                    LogUtis.Log("ivPlay.performClick()");
+                }
+            }, 1000);
+        }else{
+            mediaPlayService.playUrl(url);
+            onListener();
+            handler.post(runnable);
+            objectAnimator.start();
+            objectAnimator1.start();
+            tv_durationTime.setText(format.format(mediaPlayService.mediaPlayer.getDuration()));
+            LogUtis.Log("durationTime:"+format.format(mediaPlayService.mediaPlayer.getDuration()));
+        }
     }
 
     private void initView(){
-            tvSongname.setText(songName);
-            tvArtistName.setText(artistName);
-        Glide.with(this).load(songImage).transform(new CircleTransform(this)).into(ivSongImage);
+        tv_durationTime.setText(format.format(new Date(songlist.get(index).getFile_duration()*1000)));
+            tvSongname.setText(songlist.get(index).getTitle());
+            tvArtistName.setText(songlist.get(index).getArtist_name());
+        Glide.with(this).load(songPic).transform(new CircleTransform(this)).into(ivSongImage);
     }
 
     private void onBindService(){
         Intent intent=new Intent(this,MediaPlayService.class);
         startService(intent);
         bindService(intent,serviceConnection,MediaPlayService.BIND_AUTO_CREATE);
-//        mediaPlayService.playOrPause();
         setAnimator();
 
     }
@@ -175,11 +221,6 @@ public class PlayingActivity extends Activity implements MediaPlayer.OnBuffering
         objectAnimator1.setInterpolator(new LinearInterpolator());
     }
 
-
-
-
-
-
     @OnClick({R.id.iv_back, R.id.iv_share, R.id.iv_songImage,R.id.iv_previous, R.id.iv_play, R.id.iv_next})
     public void onClick(View view) {
         switch (view.getId()) {
@@ -191,6 +232,14 @@ public class PlayingActivity extends Activity implements MediaPlayer.OnBuffering
             case R.id.iv_songImage:
                 break;
             case R.id.iv_previous:
+
+                if(index==0){
+                    index=songlist.size()-1;
+                }else{
+                    index-=1;
+                }
+                playingPresenter.getSingleSongMsg(songlist.get(index).getSong_id());
+                ivPlay.setImageResource(R.mipmap.pause);
                 break;
             case R.id.iv_play:
                 if(mediaPlayService!=null){
@@ -207,16 +256,48 @@ public class PlayingActivity extends Activity implements MediaPlayer.OnBuffering
                 }
                 break;
             case R.id.iv_next:
+                if(index==songlist.size()-1){
+                    index=0;
+                }else{
+                    index+=1;
+                }
+                playingPresenter.getSingleSongMsg(songlist.get(index).getSong_id());
+                ivPlay.setImageResource(R.mipmap.pause);
                 break;
         }
+    }
+
+    @Override
+    public void onPlayUrl(SingleSongInfoBean bean) {
+        singleSongInfoBean=bean;
+        songPic=bean.getSonginfo().getPic_premium();
+        musicUrl=bean.getBitrat().getFile_link();
+        initPlay(musicUrl);
+        initView();
+    }
+
+    @Override
+    public void toastMsg(String msg) {
+
     }
 
     class SeekBarChangeEvent implements SeekBar.OnSeekBarChangeListener{
         int progress;
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            LogUtis.Log("seekbarprogress:"+progress+"|"+mediaPlayService.mediaPlayer.getDuration());
             this.progress = progress * mediaPlayService.mediaPlayer.getDuration()
                     / seekBar.getMax();
+            if(progress==100){
+                new Handler(){
+                    @Override
+                    public void handleMessage(Message msg) {
+                        super.handleMessage(msg);
+                        ivNext.performClick();
+                        LogUtis.Log("performClick");
+                    }
+                }.sendEmptyMessageDelayed(0,1500);
+            }
         }
 
         @Override
@@ -228,6 +309,7 @@ public class PlayingActivity extends Activity implements MediaPlayer.OnBuffering
         public void onStopTrackingTouch(SeekBar seekBar) {
             mediaPlayService.mediaPlayer.seekTo(progress);
         }
+
     }
 
 
@@ -239,6 +321,6 @@ public class PlayingActivity extends Activity implements MediaPlayer.OnBuffering
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mediaPlayService.stop();
+//        mediaPlayService.stop();
     }
 }

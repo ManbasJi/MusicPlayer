@@ -1,10 +1,12 @@
 package com.manbas.downmusic.bean;
 
+import java.io.Serializable;
+
 /**
  * Created by Administrator on 2016/12/19.
  */
 
-public class SongMsgBean {
+public class SongMsgBean implements Serializable{
 
     /**
      * artist_id : 29

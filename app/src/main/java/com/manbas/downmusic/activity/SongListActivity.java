@@ -81,10 +81,13 @@ public class SongListActivity extends Activity implements SongListView{
             public void onItemClick(View v, int position) {
                 SongMsgBean bean = mlist.get(position);
                 Bundle b = new Bundle();
-                b.putString("songName", bean.getTitle());
-                b.putString("artistName", bean.getArtist_name());
-                b.putString("songImage", bean.getPic_big());
+//                b.putString("songName", bean.getTitle());
+//                b.putString("artistName", bean.getArtist_name());
+//                b.putString("songImage", bean.getPic_big());
+//                b.putString("songId",bean.getSong_id());
+                b.putString("index",position+"");
 //                b.putString("musicUrl",bean.get);
+                b.putSerializable("songList",mlist);
                 BaseUtils.ToAcb(SongListActivity.this, PlayingActivity.class, b);
             }
         });
