@@ -62,26 +62,15 @@
     </com.zhy.android.percent.support.PercentRelativeLayout>
 
 
-        <ImageView
-            android:id="@+id/iv_songImage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_widthPercent="51%w"
-            app:layout_heightPercent="51%w"
+        <FrameLayout
+            android:id="@+id/fl_middleContent"
             android:layout_below="@+id/layout_top"
-            android:layout_centerHorizontal="true"
-            app:layout_marginTopPercent="30%w"/>
-        <ImageView
-            android:id="@+id/iv_cd"
-            android:layout_below="@+id/layout_top"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_widthPercent="80%w"
-            app:layout_heightPercent="80%w"
-            android:layout_centerHorizontal="true"
-            android:src="@mipmap/cd_icon"
-            app:layout_marginTopPercent="15%w"
-            />
+            android:layout_above="@+id/tv_currentTime"
+            app:layout_marginBottomPercent="5%w"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            ></FrameLayout>
+
         <TextView
             android:id="@+id/tv_currentTime"
             android:layout_width="wrap_content"
@@ -108,7 +97,7 @@
             android:paddingLeft="10dp"
             android:layout_centerHorizontal="true"
             android:layout_alignParentBottom="true"
-            app:layout_marginBottomPercent="30%w"
+            app:layout_marginBottomPercent="22%w"
             android:progressDrawable="@drawable/ui_seekbar"
             android:thumb="@mipmap/point"
             />

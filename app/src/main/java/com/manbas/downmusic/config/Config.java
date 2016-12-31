@@ -1,10 +1,15 @@
 package com.manbas.downmusic.config;
 
+import android.os.Environment;
+
 /**
  * Created by Administrator on 2016/12/19.
  */
 
 public class Config {
+    public static final String LRCPath= Environment.getExternalStorageDirectory().getAbsolutePath()+"/manbasjiMusic/";
+
+
     public static final String HOST="http://tingapi.ting.baidu.com/v1/restserver/ting?format=json&calback=&from=webapp_music&method=";
 
     public static final String GetMusicListApi=HOST+"baidu.ting.billboard.billList";//获取列表
