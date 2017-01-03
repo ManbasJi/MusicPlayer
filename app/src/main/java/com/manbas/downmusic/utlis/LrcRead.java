@@ -135,14 +135,20 @@ public class LrcRead {
 			timeStr=timeStr.replace(".", "@");
 			
 			String timeData[]=timeStr.split("@");
-			
-			int minute=Integer.parseInt(timeData[0]);
-			int second=Integer.parseInt(timeData[1]);
-			int millisecond=Integer.parseInt(timeData[2]);
-			
-			int currentTime=(minute*60+second)*1000+millisecond*10;
-	    	
-			return currentTime;
+			LogUtis.Log("timeData:"+timeData);
+			if(timeData.length>2){
+				int minute=Integer.parseInt(timeData[0]);
+				int second=Integer.parseInt(timeData[1]);
+				LogUtis.Log("timeData[1]:"+timeData[1]);
+				LogUtis.Log("timeData[0]:"+timeData[0]);
+				int millisecond=Integer.parseInt(timeData[2]);
+				LogUtis.Log("timeData[2]:"+timeData[2]);
+				int currentTime=(minute*60+second)*1000+millisecond*10;
+				return currentTime;
+			}
+
+	    	return 0;
+
 	    }
       
 	    public List<LyricContent> GetLyricContent(){

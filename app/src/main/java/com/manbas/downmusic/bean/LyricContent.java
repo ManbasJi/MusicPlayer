@@ -1,6 +1,8 @@
 package com.manbas.downmusic.bean;
 
-public class LyricContent {
+import java.io.Serializable;
+
+public class LyricContent implements Serializable{
   
     private String Lyric;
     

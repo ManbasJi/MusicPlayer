@@ -1,6 +1,8 @@
 package com.manbas.downmusic.activity;
 
 import android.app.Activity;
+import android.app.Fragment;
+import android.app.FragmentManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -27,6 +29,7 @@ import com.manbas.downmusic.bean.SingleSongInfoBean;
 import com.manbas.downmusic.bean.SongMsgBean;
 import com.manbas.downmusic.config.Config;
 import com.manbas.downmusic.fragment.PlayingForCDFragment;
+import com.manbas.downmusic.fragment.PlayingForLrcFragment;
 import com.manbas.downmusic.presenter.PlayingPresenter;
 import com.manbas.downmusic.service.MediaPlayService;
 import com.manbas.downmusic.utlis.LrcRead;
@@ -34,7 +37,9 @@ import com.manbas.downmusic.utlis.ToastUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -76,15 +81,24 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
     MediaPlayService mediaPlayService;
     SimpleDateFormat format = new SimpleDateFormat("mm:ss");
 
+    PlayingForCDFragment forCDFragment=new PlayingForCDFragment();
+
     String musicUrl = "";
     String songName = "";
     String artistName = "";
     String songId = "";
     String songPic = "";
+    int CurrentTime=0;
+    int CountTime=0;
+
+    int tag=0;
+    boolean isShowCd=true;
 
     int index;
     List<SongMsgBean> songlist;
-    List<LyricContent> lyricList;
+    List<LyricContent> lyricList=new ArrayList<>();
+
+    Handler mHandler;
 
     Handler handler = new Handler();
     Runnable runnable = new Runnable() {
@@ -98,6 +112,7 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
                 seekbar.setProgress((int) pos);
                 String currentTime = format.format(position);
                 tv_currentTime.setText(currentTime);
+                LogUtis.Log("currentTime:"+currentTime+"|position:"+position);
             }
             handler.postDelayed(runnable, 1000);
         }
@@ -132,7 +147,19 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
         singleSongInfoBean = new SingleSongInfoBean();
     }
 
-    private void setFragment(){
+    private void setFragment(Fragment f){
+        Bundle b=new Bundle();
+        b.putString("imageUrl",songPic);
+        b.putSerializable("lyricList", (Serializable) lyricList);
+        f.setArguments(b);
+        FragmentManager fragmentManager=getFragmentManager();
+        android.app.FragmentTransaction transaction=fragmentManager.beginTransaction();
+        transaction.replace(R.id.fl_middleContent,f);
+        transaction.commit();
+    }
+
+    public void setmHandler(Handler handler){
+        this.mHandler=handler;
     }
 
     /*播放和加载歌词
@@ -184,8 +211,9 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
                     mediaPlayService.playUrl(url);
                     onListener();
                     handler.post(runnable);
-
-
+                    Message message=Message.obtain();
+                    message.what=1;
+                    mHandler.sendMessage(message);
                     LogUtis.Log("durationTime:" + format.format(mediaPlayService.mediaPlayer.getDuration()));
                     LogUtis.Log("ivPlay.performClick()");
                 }
@@ -194,8 +222,13 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
             mediaPlayService.playUrl(url);
             onListener();
             handler.post(runnable);
-            new PlayingForCDFragment().startRotation();
-            tv_durationTime.setText(format.format(mediaPlayService.mediaPlayer.getDuration()));
+            Message message=Message.obtain();
+            message.what=1;
+            if(mHandler!=null){
+                mHandler.sendMessage(message);
+            }
+
+//            tv_durationTime.setText(format.format(mediaPlayService.mediaPlayer.getDuration()));
             LogUtis.Log("durationTime:" + format.format(mediaPlayService.mediaPlayer.getDuration()));
         }
     }
@@ -204,7 +237,6 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
         tv_durationTime.setText(format.format(new Date(songlist.get(index).getFile_duration() * 1000)));
         tvSongname.setText(songlist.get(index).getTitle());
         tvArtistName.setText(songlist.get(index).getArtist_name());
-//        Glide.with(this).load(songPic).transform(new CircleTransform(this)).into(ivSongImage);
     }
 
     private void onBindService() {
@@ -219,11 +251,20 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
         mediaPlayService.mediaPlayer.setOnBufferingUpdateListener(this);
     }
 
-
-
-    @OnClick({R.id.iv_back, R.id.iv_share, R.id.iv_songImage, R.id.iv_previous, R.id.iv_play, R.id.iv_next})
+    @OnClick({R.id.iv_back, R.id.iv_share, R.id.iv_previous, R.id.iv_play, R.id.iv_next,R.id.fl_middleContent})
     public void onClick(View view) {
         switch (view.getId()) {
+            case R.id.fl_middleContent:
+                if(tag==0){
+                    setFragment(new PlayingForLrcFragment());
+                    tag=1;
+                }else{
+                    setFragment(new PlayingForCDFragment());
+                    tag=0;
+                }
+
+                break;
+
             case R.id.iv_back:
                 onBackPressed();
                 break;
@@ -232,7 +273,7 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
             case R.id.iv_songImage:
                 break;
             case R.id.iv_previous:
-
+                isShowCd=false;
                 if (index == 0) {
                     index = songlist.size() - 1;
                 } else {
@@ -246,14 +287,19 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
                     mediaPlayService.playOrPause();
                     if (mediaPlayService.mediaPlayer.isPlaying()) {
                         ivPlay.setImageResource(R.mipmap.pause);
-                        new PlayingForCDFragment().startRotation();
+                        Message message=Message.obtain();
+                        message.what=1;
+//                        mHandler.sendMessage(message);
                     } else {
                         ivPlay.setImageResource(R.mipmap.play);
-                        new PlayingForCDFragment().stopRotation();
+                        Message message=Message.obtain();
+                        message.what=2;
+//                        mHandler.sendMessage(message);
                     }
                 }
                 break;
             case R.id.iv_next:
+                isShowCd=false;
                 if (index == songlist.size() - 1) {
                     index = 0;
                 } else {
@@ -270,8 +316,13 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
         singleSongInfoBean = bean;
         songPic = bean.getSonginfo().getPic_premium();
         musicUrl = bean.getBitrat().getFile_link();
+        if(isShowCd){
+            setFragment(forCDFragment);
+        }
         initPlay(musicUrl);
         initView();
+
+
     }
 
     @Override
@@ -288,6 +339,7 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
             this.progress = progress * mediaPlayService.mediaPlayer.getDuration()
                     / seekBar.getMax();
             if (progress == 100) {
+                isShowCd=false;
                 new Handler() {
                     @Override
                     public void handleMessage(Message msg) {
@@ -320,6 +372,8 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
     @Override
     protected void onDestroy() {
         super.onDestroy();
+//        handler.removeCallbacks(runnable);
+        unbindService(serviceConnection);
 //        mediaPlayService.stop();
     }
 
@@ -337,5 +391,36 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
             window.setStatusBarColor(Color.TRANSPARENT);
             window.setNavigationBarColor(Color.TRANSPARENT);
         }
+    }
+
+    private int indexc=0;
+    public int Index(){
+
+        if(mediaPlayService.mediaPlayer.isPlaying()){
+            CurrentTime=mediaPlayService.mediaPlayer.getCurrentPosition();
+
+            CountTime=mediaPlayService.mediaPlayer.getDuration();
+        }
+        if(CurrentTime<CountTime){
+
+            for(int i=0;i<lyricList.size();i++){
+                if(i<lyricList.size()-1){
+                    if(CurrentTime<lyricList.get(i).getLyricTime()&&i==0){
+                        indexc=i;
+                    }
+
+                    if(CurrentTime>lyricList.get(i).getLyricTime()&&CurrentTime<lyricList.get(i+1).getLyricTime()){
+                        indexc=i;
+                    }
+                }
+
+                if(i==lyricList.size()-1&&CurrentTime>lyricList.get(i).getLyricTime()){
+                    indexc=i;
+                }
+            }
+        }
+
+        //System.out.println(index);
+        return indexc;
     }
 }
