@@ -15,7 +15,6 @@ import android.support.annotation.Nullable;
 
 import com.manbas.downmusic.R;
 import com.manbas.downmusic.activity.PlayingActivity;
-import com.manbas.downmusic.activity.SongListActivity;
 
 import java.io.IOException;
 

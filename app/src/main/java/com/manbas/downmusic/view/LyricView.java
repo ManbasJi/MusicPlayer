@@ -23,9 +23,9 @@ public class LyricView extends TextView  {
 
 	private Paint NotCurrentPaint;
 
-	private float TextHigh=25;
+	private float TextHigh=130;
 
-	private float TextSize=15;
+	private float TextSize=20;
 
 	private int Index=0;
 
@@ -77,13 +77,13 @@ public class LyricView extends TextView  {
 			return;
 		}
 
-		CurrentPaint.setColor(Color.YELLOW);
-		NotCurrentPaint.setColor(Color.GREEN);
+		CurrentPaint.setColor(Color.WHITE);
+		NotCurrentPaint.setColor(Color.GRAY);
 
-		CurrentPaint.setTextSize(TextSize);
+		CurrentPaint.setTextSize(50);
 		CurrentPaint.setTypeface(Typeface.SERIF);
 
-		NotCurrentPaint.setTextSize(TextSize);
+		NotCurrentPaint.setTextSize(50);
 		NotCurrentPaint.setTypeface(Typeface.SERIF);
 
 		try {

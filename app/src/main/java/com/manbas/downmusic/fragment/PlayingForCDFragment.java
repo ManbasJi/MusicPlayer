@@ -1,12 +1,19 @@
 package com.manbas.downmusic.fragment;
 
 import android.animation.ObjectAnimator;
+import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.Fragment;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,6 +43,7 @@ public class PlayingForCDFragment extends Fragment {
     ImageView ivCd;
 
     PlayingActivity mActivity;
+    MusicReciver musicReciver=new MusicReciver();
 
     public ObjectAnimator objectAnimator1,objectAnimator2;
 
@@ -52,6 +60,12 @@ public class PlayingForCDFragment extends Fragment {
                     stopRotation();
                     LogUtis.Log("stopRotation");
                     break;
+                case 3:
+                    imgUrl=msg.getData().getString("songPic");
+                    if(imgUrl!=null &&imgUrl!=""){
+                        setImage(imgUrl);
+                    }
+                    break;
             }
         }
     };
@@ -61,28 +75,68 @@ public class PlayingForCDFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         view=inflater.inflate(R.layout.playingforcd_fragment,container,false);
         Bundle b=getArguments();
-        imgUrl=b.getString("imageUrl");
-
         ButterKnife.bind(this,view);
-        if(imgUrl!=null){
-            Glide.with(this).load(imgUrl).transform(new CircleTransform(getActivity())).into(ivSongImage);
-        }
+        initBroadCast();
+        imgUrl=b.getString("imageUrl");
+        Glide.with(getActivity()).load(imgUrl).transform(new CircleTransform(getActivity())).into(ivSongImage);
         setAnimator();
+        startRotation();
         return view;
 
     }
 
+    private void setImage(final String imgUrl){
+        LogUtis.Log("songPic"+imgUrl);
+        Glide.with(getActivity()).load(imgUrl).transform(new CircleTransform(getActivity())).placeholder(R.mipmap.ic_launcher).into(ivSongImage);
+        startRotation();
+    }
+
+    @TargetApi(23)
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        mActivity=(PlayingActivity)context;
-        mActivity.setmHandler(handler);
+        LogUtis.Log("onAttach","context");
+        onAttachToContext(context);
+    }
+
+    /*
+     * Deprecated on API 23
+     * Use onAttachToContext instead
+     */
+    @SuppressWarnings("deprecation")
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        LogUtis.Log("onAttach","activity");
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            onAttachToContext(activity);
+        }
+    }
+
+    /*
+     * Called when the fragment attaches to the context
+     */
+    protected void onAttachToContext(Context context) {
+        mActivity= (PlayingActivity) getActivity();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-//        startRotation();\
+    }
+
+    private void initBroadCast(){
+        IntentFilter intentFilter=new IntentFilter();
+        intentFilter.addAction(PlayingActivity.ACTION_PLAY);
+        intentFilter.addAction(PlayingActivity.ACTION_PAUSE);
+        intentFilter.addAction(PlayingActivity.ACTION_NEXT);
+        intentFilter.addAction(PlayingActivity.ACTION_LAST);
+        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(musicReciver,intentFilter);
+    }
+
+    public void setImageUrl(){
+        Glide.with(this).load(imgUrl).transform(new CircleTransform(getActivity())).into(ivSongImage);
+        startRotation();
     }
 
     private void setAnimator() {
@@ -107,4 +161,33 @@ public class PlayingForCDFragment extends Fragment {
         objectAnimator2.pause();
     }
 
+    class MusicReciver extends BroadcastReceiver{
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action=intent.getAction();
+            switch (action){
+                case PlayingActivity.ACTION_PLAY:
+                    startRotation();
+                    break;
+                case PlayingActivity.ACTION_PAUSE:
+                    stopRotation();
+                    break;
+                case PlayingActivity.ACTION_NEXT:
+                    imgUrl=intent.getStringExtra("songPic");
+                    setImageUrl();
+                    break;
+                case PlayingActivity.ACTION_LAST:
+                    imgUrl=intent.getStringExtra("songPic");
+                    setImageUrl();
+                    break;
+            }
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(musicReciver);
+    }
 }
