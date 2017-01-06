@@ -9,7 +9,7 @@
     <com.zhy.android.percent.support.PercentRelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#af000000"
+        android:background="@mipmap/ic_blackground"
         android:paddingTop="30dp">
     <com.zhy.android.percent.support.PercentRelativeLayout
         android:id="@+id/layout_top"

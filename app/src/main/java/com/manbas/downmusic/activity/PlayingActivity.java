@@ -1,5 +1,6 @@
 package com.manbas.downmusic.activity;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
@@ -15,6 +16,7 @@ import android.os.IBinder;
 import android.os.Message;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.AppCompatSeekBar;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -104,21 +106,15 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
     List<LyricContent> lyricList = new ArrayList<>();
 
 
+
     //更新ui界面
     Handler handler = new Handler();
     Runnable runnable = new Runnable() {
-
         @Override
         public void run() {
-            int position = mediaPlayService.mediaPlayer.getCurrentPosition();
-            int duration = mediaPlayService.mediaPlayer.getDuration();
-            if (duration > 0) {
-                // 计算进度（获取进度条最大刻度*当前音乐播放位置 / 当前音乐时长）
-                long pos = seekbar.getMax() * position / duration;
-                seekbar.setProgress((int) pos);
-                String currentTime = format.format(position);
-                tv_currentTime.setText(currentTime);
-            }
+            seekbar.setProgress(seekbar.getProgress()+1000);
+            tv_currentTime.setText(duration2Time(seekbar.getProgress()));
+            handler.removeCallbacks(runnable);//避免重复post，导致时间增加频率加快
             handler.postDelayed(runnable, 1000);
         }
     };
@@ -155,6 +151,24 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
     private void onListener() {
         seekbar.setOnSeekBarChangeListener(new SeekBarChangeEvent());
         mediaPlayService.mediaPlayer.setOnBufferingUpdateListener(this);
+        mediaPlayService.mediaPlayer.setOnCompletionListener(new MeidaOnCompletion());
+    }
+
+    /*根据时长格式化称时间文本*/
+    private String duration2Time(int duration) {
+        int min = duration / 1000 / 60;
+        int sec = duration / 1000 % 60;
+        Log.i("music","min:"+min+"| sec:"+sec);
+
+        return (min < 10 ? "0" + min : min + "") + ":" + (sec < 10 ? "0" + sec : sec + "");
+    }
+
+    private void initSeekBar(int totalduration){
+        seekbar.setProgress(0);
+        seekbar.setMax(totalduration);
+        tv_currentTime.setText(duration2Time(0));
+        tv_durationTime.setText(duration2Time(totalduration));
+        handler.post(runnable);
     }
 
     /**
@@ -166,6 +180,7 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
         tv_durationTime.setText(format.format(new Date(songlist.get(index).getFile_duration() * 1000)));
         tvSongname.setText(songlist.get(index).getTitle());
         tvArtistName.setText(songlist.get(index).getArtist_name());
+
     }
 
     /**
@@ -210,21 +225,31 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
      * @desc 播放音乐，这里需要判断Service是否绑定完成
      */
     private void initPlay(final String url) {
-        if (mediaPlayService == null) {
+        if(mediaPlayService==null) {
             new Handler().postDelayed(new Runnable() {
+                @TargetApi(Build.VERSION_CODES.LOLLIPOP)
                 @Override
                 public void run() {
-                    mediaPlayService.playUrl(url);
+                    try {
+                        mediaPlayService.playUrl(url);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     onListener();
-                    handler.post(runnable);
-                    LogUtis.Log("durationTime:" + format.format(mediaPlayService.mediaPlayer.getDuration()));
-                    LogUtis.Log("ivPlay.performClick()");
+                    initSeekBar(mediaPlayService.mediaPlayer.getDuration());
+
+                    LogUtis.Log("durationTime:" + duration2Time(mediaPlayService.mediaPlayer.getDuration()));
                 }
             }, 1000);
-        } else {
-            mediaPlayService.playUrl(url);
+        }
+        else {
+            try {
+                mediaPlayService.playUrl(url);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             onListener();
-            handler.post(runnable);
+            initSeekBar(mediaPlayService.mediaPlayer.getDuration());
             LogUtis.Log("durationTime:" + format.format(mediaPlayService.mediaPlayer.getDuration()));
         }
     }
@@ -268,13 +293,10 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
                     tag = 0;
                 }
                 break;
-
             case R.id.iv_back:
                 onBackPressed();
                 break;
             case R.id.iv_share:
-                break;
-            case R.id.iv_songImage:
                 break;
             case R.id.iv_previous:
                 musicStatus = ACTION_LAST;
@@ -285,18 +307,21 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
                     index -= 1;
                 }
                 playAndLoadLrc();
+//                handler.removeCallbacks(runnable);
+                mediaPlayService.mediaPlayer.pause();
                 playingPresenter.getSingleSongMsg(songlist.get(index).getSong_id());
                 ivPlay.setImageResource(R.mipmap.pause);
                 break;
             case R.id.iv_play:
-
                 if (mediaPlayService != null) {
                     mediaPlayService.playOrPause();
                     if (mediaPlayService.mediaPlayer.isPlaying()) {
+                        handler.post(runnable);
                         musicStatus = ACTION_PLAY;
                         ivPlay.setImageResource(R.mipmap.pause);
                         LocalBroadcastManager.getInstance(PlayingActivity.this).sendBroadcast(new Intent(ACTION_PLAY));
                     } else {
+                        handler.removeCallbacks(runnable);
                         musicStatus = ACTION_PAUSE;
                         ivPlay.setImageResource(R.mipmap.play);
                         LocalBroadcastManager.getInstance(PlayingActivity.this).sendBroadcast(new Intent(ACTION_PAUSE));
@@ -312,6 +337,8 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
                     index += 1;
                 }
                 playAndLoadLrc();
+//                handler.removeCallbacks(runnable);
+                mediaPlayService.mediaPlayer.pause();
                 playingPresenter.getSingleSongMsg(songlist.get(index).getSong_id());
                 ivPlay.setImageResource(R.mipmap.pause);
                 break;
@@ -323,6 +350,7 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
         singleSongInfoBean = bean;
         songPic = bean.getSonginfo().getPic_premium();
         musicUrl = bean.getBitrat().getFile_link();
+        initPlay(musicUrl);
         if (isShowCd) {
             setFragment(forCDFragment);
         } else {
@@ -338,7 +366,6 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
                 LocalBroadcastManager.getInstance(PlayingActivity.this).sendBroadcast(intent);
             }
         }
-        initPlay(musicUrl);
         initView();
     }
 
@@ -413,20 +440,8 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
             LogUtis.Log("seekbarprogress:" + progress + "|" + mediaPlayService.mediaPlayer.getDuration());
-            this.progress = progress * mediaPlayService.mediaPlayer.getDuration()
-                    / seekBar.getMax();
-            if (progress == 100) {
-                isShowCd = false;
-                //延迟1.5秒自动点击下一首
-                new Handler() {
-                    @Override
-                    public void handleMessage(Message msg) {
-                        super.handleMessage(msg);
-                        ivNext.performClick();
-                        LogUtis.Log("performClick");
-                    }
-                }.sendEmptyMessageDelayed(0, 1500);
-            }
+//            this.progress = progress * mediaPlayService.mediaPlayer.getDuration()
+//                    / seekBar.getMax();
         }
 
         @Override
@@ -436,11 +451,25 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
 
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
-            mediaPlayService.mediaPlayer.seekTo(progress);
+            mediaPlayService.mediaPlayer.seekTo(seekBar.getProgress());
 
         }
 
     }
 
+    class MeidaOnCompletion implements MediaPlayer.OnCompletionListener {
 
+        @Override
+        public void onCompletion(MediaPlayer mp) {
+            LogUtis.Log("播放完成");
+            new Handler() {
+                @Override
+                public void handleMessage(Message msg) {
+                    super.handleMessage(msg);
+                    ivNext.performClick();
+                    LogUtis.Log("performClick");
+                }
+            }.sendEmptyMessageDelayed(0, 1500);
+        }
+    }
 }

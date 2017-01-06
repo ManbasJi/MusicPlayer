@@ -135,15 +135,14 @@ public class LrcRead {
 			timeStr=timeStr.replace(".", "@");
 			
 			String timeData[]=timeStr.split("@");
-			LogUtis.Log("timeData:"+timeData);
 			if(timeData.length>2){
 				try {
 					int minute=Integer.parseInt(timeData[0]);
 					int second=Integer.parseInt(timeData[1]);
-					LogUtis.Log("timeData[1]:"+timeData[1]);
-					LogUtis.Log("timeData[0]:"+timeData[0]);
+//					LogUtis.Log("timeData[1]:"+timeData[1]);
+//					LogUtis.Log("timeData[0]:"+timeData[0]);
 					int millisecond=Integer.parseInt(timeData[2]);
-					LogUtis.Log("timeData[2]:"+timeData[2]);
+//					LogUtis.Log("timeData[2]:"+timeData[2]);
 					int currentTime=(minute*60+second)*1000+millisecond*10;
 					return currentTime;
 				} catch (NumberFormatException e) {

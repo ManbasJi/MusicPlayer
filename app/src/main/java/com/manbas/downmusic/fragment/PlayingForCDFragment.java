@@ -74,11 +74,14 @@ public class PlayingForCDFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         view=inflater.inflate(R.layout.playingforcd_fragment,container,false);
+
         Bundle b=getArguments();
+
         ButterKnife.bind(this,view);
         initBroadCast();
         imgUrl=b.getString("imageUrl");
         Glide.with(getActivity()).load(imgUrl).transform(new CircleTransform(getActivity())).into(ivSongImage);
+
         setAnimator();
         startRotation();
         return view;
@@ -160,6 +163,7 @@ public class PlayingForCDFragment extends Fragment {
         objectAnimator1.pause();
         objectAnimator2.pause();
     }
+
 
     class MusicReciver extends BroadcastReceiver{
 

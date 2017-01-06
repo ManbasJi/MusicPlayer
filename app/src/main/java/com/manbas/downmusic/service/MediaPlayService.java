@@ -12,9 +12,11 @@ import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
 
 import com.manbas.downmusic.R;
 import com.manbas.downmusic.activity.PlayingActivity;
+import com.manbas.downmusic.base.LogUtis;
 
 import java.io.IOException;
 
@@ -22,7 +24,7 @@ import java.io.IOException;
  * Created by Administrator on 2016/12/27.
  */
 
-public class MediaPlayService extends Service implements MediaPlayer.OnPreparedListener,MediaPlayer.OnErrorListener{
+public class MediaPlayService extends Service implements MediaPlayer.OnPreparedListener,MediaPlayer.OnErrorListener,MediaPlayer.OnCompletionListener{
     public MediaPlayer mediaPlayer;
     public static int PLAYING=1;
     public static int PAUSING=2;
@@ -47,7 +49,8 @@ public class MediaPlayService extends Service implements MediaPlayer.OnPreparedL
         super.onCreate();
         mContext = this.getApplicationContext();
         mediaPlayer=new MediaPlayer();
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
+
 //        mediaPlayer.prepareAsync();
     }
 
@@ -76,15 +79,17 @@ public class MediaPlayService extends Service implements MediaPlayer.OnPreparedL
         return START_STICKY;
     }
 
-    public void playUrl(String url){
+    public void playUrl(String url) throws IOException {
         mediaPlayer.reset();
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         try {
             mediaPlayer.setDataSource(url);//设置数据源
         } catch (IOException e) {
             e.printStackTrace();
         }
+        mediaPlayer.setOnCompletionListener(this);
         mediaPlayer.setOnPreparedListener(this);
-        mediaPlayer.prepareAsync();
+        mediaPlayer.prepare();
     }
 
     public void playOrPause(){
@@ -119,7 +124,14 @@ public class MediaPlayService extends Service implements MediaPlayer.OnPreparedL
 
     @Override
     public void onPrepared(MediaPlayer mp) {
+        LogUtis.Log("onPrepared");
         mp.start();
+    }
+
+    @Override
+    public void onCompletion(MediaPlayer mp) {
+        LogUtis.Log("service播放完成");
+        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("NEXT_SONG"));
     }
 
     public class MyBindler extends Binder{
