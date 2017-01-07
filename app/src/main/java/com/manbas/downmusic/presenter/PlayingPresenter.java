@@ -14,6 +14,7 @@ import com.zhy.http.okhttp.callback.StringCallback;
 import java.lang.reflect.Type;
 
 import okhttp3.Call;
+import okhttp3.Request;
 
 /**
  * Created by Administrator on 2016/12/30.
@@ -41,7 +42,16 @@ public class PlayingPresenter {
                     @Override
                     public void onError(Call call, Exception e, int id) {
                         view.toastMsg(e.getMessage());
+                        view.closeProgressDialog("网络异常");
                     }
+
+                    @Override
+                    public void onBefore(Request request, int id) {
+                        super.onBefore(request, id);
+                        view.openProgressDialog("");
+
+                    }
+
 
                     @Override
                     public void onResponse(String response, int id) {
@@ -50,6 +60,7 @@ public class PlayingPresenter {
                         SingleSongInfoBean bean=gson.fromJson(response,type);
                         if(bean!=null){
                             view.onPlayUrl(bean);
+                            view.closeProgressDialog("");
                         }
                     }
                 });

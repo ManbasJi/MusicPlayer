@@ -36,7 +36,9 @@ import com.manbas.downmusic.fragment.PlayingForLrcFragment;
 import com.manbas.downmusic.presenter.PlayingPresenter;
 import com.manbas.downmusic.service.MediaPlayService;
 import com.manbas.downmusic.utlis.LrcRead;
+import com.manbas.downmusic.utlis.ProgressDialogUtil;
 import com.manbas.downmusic.utlis.ToastUtils;
+import com.zhy.android.percent.support.PercentRelativeLayout;
 
 import java.io.File;
 import java.io.IOException;
@@ -82,6 +84,8 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
     TextView tv_currentTime;
     @BindView(R.id.tv_durationTime)
     TextView tv_durationTime;
+    @BindView(R.id.foregroundbg)
+    PercentRelativeLayout foregroundbg;
 
     SingleSongInfoBean singleSongInfoBean;
     PlayingPresenter playingPresenter;
@@ -95,6 +99,8 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
     String songPic = "";
     int CurrentTime = 0;
     int CountTime = 0;
+    int currentDurationP=0;
+    int totaldurationP=0;
 
     //控制fragment的切换
     int tag = 0;
@@ -137,13 +143,32 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.playing_activity);
+
+        currentDurationP=getIntent().getIntExtra("currentDuration",0);
+        totaldurationP=getIntent().getIntExtra("Duration",0);
+
         setTopState();//顶部状态栏透明
         ButterKnife.bind(this);
         onBindService();//绑定服务并开启
         playingPresenter = new PlayingPresenter(this, this);
+
         songlist = (List<SongMsgBean>) getIntent().getSerializableExtra("songList");
-        index = Integer.parseInt(getIntent().getStringExtra("index"));
-        playingPresenter.getSingleSongMsg(songlist.get(index).getSong_id());
+        if(songlist==null){
+            songlist=Config.songMsgBeanList;
+        }else{
+            Config.songMsgBeanList=songlist;
+        }
+
+        if(getIntent().getStringExtra("index")!=null){
+            index = Integer.parseInt(getIntent().getStringExtra("index"));
+            Config.MUSIC_INDEX=index;
+        }else{
+            index=Config.MUSIC_INDEX;
+        }
+
+            playingPresenter.getSingleSongMsg(songlist.get(index).getSong_id());
+
+
         playAndLoadLrc();//加载歌曲和歌词
         singleSongInfoBean = new SingleSongInfoBean();
     }
@@ -164,9 +189,16 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
     }
 
     private void initSeekBar(int totalduration){
-        seekbar.setProgress(0);
         seekbar.setMax(totalduration);
         tv_currentTime.setText(duration2Time(0));
+        tv_durationTime.setText(duration2Time(totalduration));
+        handler.post(runnable);
+    }
+
+    private void initPMusic(int currentDurationP,int totalduration){
+//        seekbar.setProgress(currentDurationP);
+        seekbar.setMax(totalduration);
+        tv_currentTime.setText(duration2Time(currentDurationP));
         tv_durationTime.setText(duration2Time(totalduration));
         handler.post(runnable);
     }
@@ -236,7 +268,14 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
                         e.printStackTrace();
                     }
                     onListener();
-                    initSeekBar(mediaPlayService.mediaPlayer.getDuration());
+
+//                    if(currentDurationP==0){
+                        initSeekBar(mediaPlayService.mediaPlayer.getDuration());
+//                    }else{
+//                        initPMusic(currentDurationP,totaldurationP);
+//                    }
+
+
 
                     LogUtis.Log("durationTime:" + duration2Time(mediaPlayService.mediaPlayer.getDuration()));
                 }
@@ -249,7 +288,11 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
                 e.printStackTrace();
             }
             onListener();
-            initSeekBar(mediaPlayService.mediaPlayer.getDuration());
+//            if(currentDurationP==0){
+                initSeekBar(mediaPlayService.mediaPlayer.getDuration());
+//            }else{
+//                initPMusic(currentDurationP,totaldurationP);
+//            }
             LogUtis.Log("durationTime:" + format.format(mediaPlayService.mediaPlayer.getDuration()));
         }
     }
@@ -306,8 +349,8 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
                 } else {
                     index -= 1;
                 }
+                seekbar.setProgress(0);
                 playAndLoadLrc();
-//                handler.removeCallbacks(runnable);
                 mediaPlayService.mediaPlayer.pause();
                 playingPresenter.getSingleSongMsg(songlist.get(index).getSong_id());
                 ivPlay.setImageResource(R.mipmap.pause);
@@ -319,11 +362,13 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
                         handler.post(runnable);
                         musicStatus = ACTION_PLAY;
                         ivPlay.setImageResource(R.mipmap.pause);
+                        //发送广播
                         LocalBroadcastManager.getInstance(PlayingActivity.this).sendBroadcast(new Intent(ACTION_PLAY));
                     } else {
                         handler.removeCallbacks(runnable);
                         musicStatus = ACTION_PAUSE;
                         ivPlay.setImageResource(R.mipmap.play);
+                        //发送广播
                         LocalBroadcastManager.getInstance(PlayingActivity.this).sendBroadcast(new Intent(ACTION_PAUSE));
                     }
                 }
@@ -336,8 +381,8 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
                 } else {
                     index += 1;
                 }
+                seekbar.setProgress(0);
                 playAndLoadLrc();
-//                handler.removeCallbacks(runnable);
                 mediaPlayService.mediaPlayer.pause();
                 playingPresenter.getSingleSongMsg(songlist.get(index).getSong_id());
                 ivPlay.setImageResource(R.mipmap.pause);
@@ -372,6 +417,18 @@ public class PlayingActivity extends Activity implements PlayingView, MediaPlaye
     @Override
     public void toastMsg(String msg) {
 
+    }
+
+
+
+    @Override
+    public void openProgressDialog(String msg) {
+        ProgressDialogUtil.openProgressDialog(this,"",msg);
+    }
+
+    @Override
+    public void closeProgressDialog(String msg) {
+        ProgressDialogUtil.closeProgressDialog();
     }
 
     @Override

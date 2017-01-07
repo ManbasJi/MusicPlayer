@@ -9,4 +9,6 @@ import com.manbas.downmusic.bean.SingleSongInfoBean;
 public interface PlayingView {
     void onPlayUrl(SingleSongInfoBean bean);
     void toastMsg(String msg);
+    void openProgressDialog(String msg);
+    void closeProgressDialog(String msg);
 }

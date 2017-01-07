@@ -49,8 +49,6 @@ public class MediaPlayService extends Service implements MediaPlayer.OnPreparedL
         super.onCreate();
         mContext = this.getApplicationContext();
         mediaPlayer=new MediaPlayer();
-
-
 //        mediaPlayer.prepareAsync();
     }
 
@@ -58,12 +56,15 @@ public class MediaPlayService extends Service implements MediaPlayer.OnPreparedL
     public int onStartCommand(Intent intent, int flags, int startId) {
         Intent it = new Intent();
 //        it.addCategory(Intent.CATEGORY_LAUNCHER);
+        it.putExtra("currentDuration",mediaPlayer.getCurrentPosition());
+        it.putExtra("Duration",mediaPlayer.getDuration());
         it.setComponent(new ComponentName(this, PlayingActivity.class));
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);//设置启动模式
 
         PendingIntent pi = PendingIntent.getActivity(mContext, 0,
                 it, PendingIntent.FLAG_UPDATE_CURRENT);
+
         builder = new Notification.Builder(mContext);
         builder.setSmallIcon(R.mipmap.play);
         builder.setContentTitle("manbasji's mediaplayer");

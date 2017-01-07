@@ -15,6 +15,8 @@ public class Config {
 
     public static final String LRCPath= Environment.getExternalStorageDirectory().getAbsolutePath()+"/manbasjiMusic/";
 
+    public static Integer MUSIC_INDEX;
+
 //    /*截图屏幕宽高*/
 //    private static final float BASE_SCREEN_WIDTH = (float) 1080.0;
 //    private static final float BASE_SCREEN_HEIGHT = (float) 1920.0;
