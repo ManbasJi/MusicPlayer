@@ -93,6 +93,7 @@ public class MediaPlayService extends Service implements MediaPlayer.OnPreparedL
         mediaPlayer.prepare();
     }
 
+    //播放或者暂停
     public void playOrPause(){
 
         if(mediaPlayer.isPlaying()){
@@ -104,6 +105,7 @@ public class MediaPlayService extends Service implements MediaPlayer.OnPreparedL
         }
     }
 
+    //停止
     public void stop(){
         if(mediaPlayer!=null){
             mediaPlayer.stop();
